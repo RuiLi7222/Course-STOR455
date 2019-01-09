@@ -1,0 +1,350 @@
+---
+title: "Case Study 3: Variable Selection"
+author: "Kelly Bodwin"
+output: html_document
+---
+
+
+In this case study, you will continue to perform multiple regression, but you will be asked to think about which variables should or should not be included.  
+
+## Preliminary checks
+
+First we will predict the price of a laptop based on many variables, both quantitative and categorial. Begin by downloading the data as usual.  By now, you should find it natural to explore basic information about a dataset and its variables after downloading.
+
+```{r, eval = TRUE}
+
+laptops = read.csv("http://kbodwin.web.unc.edu/files/2016/10/laptops.csv")
+  
+summary(laptops)
+
+countNs <- which(laptops$Max.Horizontal.Resolution == "?")
+
+laptops <- laptops[-countNs, ]
+
+summary(laptops)
+```
+
+Summarize the data, and fix anything that seems nonsensical.  (This should be your first step before any analysis.)
+
+***
+
+### Question 1:
+
+a.  Run the following code:
+```{r, eval = FALSE}
+for(i in 1:ncol(laptops)){
+  #par(ask = TRUE)
+  plot(laptops[,i], xlab = names(laptops)[i])
+}
+```
+What did this do?  What was the role of the line `par(ask = TRUE)`? How did we use the loop to get each variable name to print on the x-axis?
+```
+The loop summarizes the 17 variables seperately by plotting each variable alone.
+
+The line 'par(ask = TRUE)' will prompt before showing the next picture. We have to enter return to see the next plot. Without this line, all plots will show up at once.
+
+By writing the code "xlab = names(laptops)[i]" inside the loop, we get each variable name to print on the x-axis.
+```
+As you looked at the plots, did anything stand out to you as a possible problem for regression?
+```
+The variable 'Subwoofer' and 'CDMA' only has one value "NO".
+The variable 'External Battery' has a relatively small number of value "YES".
+```
+
+b. Alter the above code so that instead of plotting each variable alone, you plot it against `Price`.  Comment on what you see.
+
+```{r, eval = FALSE}
+for(i in 1:(ncol(laptops) - 1)) {
+  par(ask = TRUE)
+  if (class(laptops$i) == "factor") {
+   plot(factor(laptops[,i]), laptops$Price, xlab = names(laptops)[i]) 
+  } else {
+   plot(laptops[,i], laptops$Price, xlab = names(laptops)[i]) 
+  }
+  
+}
+```
+
+```
+According to the output, we can get the following results:
+The Processor.Speed has a roughly positive relationship with Price.
+```
+
+**Note: When you are done with this question, change the code chunks to `eval = FALSE`, to avoid printing all the plots in your final output.**
+
+***
+
+### Question 2: 
+For each of the following regressions, explain what is wrong with the output of `lm( )`, and why exactly it occurred.  Explain your answers with appropriate plots or tables where possible.
+
+```{r, eval = FALSE}
+# a
+lm_a = lm(Price ~ Subwoofer, data = laptops)
+```
+
+```{r, eval = TRUE}
+nlevels(laptops$Subwoofer)
+```
+
+```
+Based on the output above, 'lm( )' can only be applied to factors with 2 or more levels. However, variable 'Subwoofer' only have one factor.
+```
+
+```{r, eval = TRUE}
+# b
+lm_b = lm(Price ~ Max.Horizontal.Resolution^2, data = laptops)
+summary(lm_b)
+lm_b1 = lm(Price ~ Max.Horizontal.Resolution, data = laptops)
+summary(lm_b1)
+plot(laptops$Max.Horizontal.Resolution, laptops$Price)
+```
+
+```
+According to the summaries, there is no difference between 'lm_b' and 'lm_b1'.
+
+Based on the output above, only factors 'Max.Horizontal.Resolution768' and 'Max.Horizontal.Resolution800' have a clear relationship with Price. Moreover, there is 0.5 significant level of evidence supporting that these two factors have negative relationship with Price, respectively.
+```
+```{r, eval = TRUE}
+# c
+lm_c = lm(Price ~ Manufacturer + Operating.System, data = laptops)
+summary(lm_c)
+plot(laptops$Operating.System, laptops$Price)
+
+table(laptops$Manufacturer, laptops$Operating.System)
+```
+
+```
+Based on the output above, the factor Operating.SystemVista_Business fails to be defined in the 'lm( )'. The reason is because while the value of 'Mas_OS' has no change, the value of 'Vista_Business' are roughly normally distributed according to Price. 
+
+According to the table, the error occurs because when System is "Mac_OS
+" only Apple will be the Manufacturer, and Apple only manufactures "Mac_OS" products.
+```
+
+```{r, eval = TRUE}
+# d
+lm_d1 = lm(Price ~ Processor.Speed+Processor, data = laptops)
+summary(lm_d1)
+lm_d2 = lm(Price ~ Processor.Speed*Processor, data = laptops)
+summary(lm_d2)
+
+table(laptops$Processor.Speed, laptops$Processor)
+```
+
+```
+Based on the output above, compared to 'lm_d1', 'lm_d2' not only analyzes the regression model between Price and Processor.Speed & factors of Processor, but also includes the intersections of Processor.Speed and each factor of Processor.
+
+Compared to 'lm_d1', both the Multiple R-squared and Adjusted R-squared increase in 'lm_d2'. At the same time, 'lm_d2' increases the significance of 'Processor.Speed', 'ProcessorIntel Core2 Duo', and 'ProcessorPowerPC'.
+
+In 'lm_d2', 'Processor.Speed:ProcessorIntel Celeron' and 'Processor.Speed:ProcessorPowerPC' are failed to be defined.
+```
+
+***
+
+## ANOVA for nested models
+
+Recall that we can use ANOVA tests to compare two multiple regressions, when one model is nested in the other.  This is particularly useful when the models have many factors, so it might be hard to tell which variable is more significant from the t-scores.
+
+***
+### Question 3:
+Consider the following model:
+```{r, eval = TRUE}
+  lm_3 = lm(Price ~ Port.Replicator + Bluetooth + Manufacturer, data = laptops)
+```
+If you had to remove exactly one of the three variables from the model, which one would you remove?  Why?
+
+```{r, eval = TRUE}
+lm_3.1 = lm(Price ~ Bluetooth + Manufacturer, data = laptops)
+lm_3.2 = lm(Price ~ Port.Replicator + Manufacturer, data = laptops)
+lm_3.3 = lm(Price ~ Port.Replicator + Bluetooth, data = laptops)
+anova(lm_3.1, lm_3)
+anova(lm_3.2, lm_3)
+anova(lm_3.3, lm_3)
+```
+
+```
+Based on the output above, I will remove variable 'Port.Replicator'.
+By comparing the p-value of three anova tests, the anova(lm_3.1, lm_3) has the smallest p-value. This means there is least significant evidence supporting that the coefficient of variable 'Port.Replicator' is not equal to zero. Therefore, I will remove it.
+```
+
+***
+### Question 4:
+Consider the issue you noticed in 2(d).  Soon, we will want to build our full regression model, and we will have to decide whether to include `Operating.System` or `Manufacturer`.  Regress each of these two variables individually against `Price`. Which one would you rather include in the full model?  Justify your answer.
+```{r, eval = TRUE}
+lm_O = lm(Price ~ Operating.System, data = laptops)
+summary(lm_O)
+lm_M = lm(Price ~ Manufacturer, data = laptops)
+summary(lm_M)
+```
+```
+I would rather include the variable 'Manufacturer' in the full model.
+
+Based on the output above, while there is no significant evidence supporting that the coefficent of factor(Operating.System) is not equal to zero, there is 0.05 level significance supporting that there is positive relationship between 'ManufacturerAsus' , 'ManufacturerFujitsu' and Price, respectively.
+```
+***
+
+## Collinearity
+
+Recall from lecture that one major concern in Multiple Regression is *collinearity*, or correlation between explanatory variables.  One way to measure this is through the Variance Inflation Factor.  Use the code below to install an **R** package that will calculate this, as well as to get rid of the useless variables we discovered in Questions 1-4.
+
+```{r, eval = TRUE}
+  # Install vif package
+  require("car")
+  
+  # Get rid of identified useless variables
+  bad = c("Port.Replicator", "Subwoofer", "CDMA")
+  lt = laptops[, !(names(laptops) %in% bad)]
+  
+```
+
+***
+### Question 5:
+Try the following regression, and then use `vif( )` to check for collinearity.  Are there any variables we should be worried about?  Decide which ones to remove (if any) from `lt`.
+```{r, eval = TRUE}
+  lm_4 = lm(Price ~ .-Operating.System, data = lt)
+  summary(lm_4)
+  vif(lm_4)
+```
+```
+Based on the output above, the VIF of 'Max.Horizontal.Resolution', 'Memory.Technology', 'Processor' and 'Manufacturer' is much larger than 10. Therefore, 'Max.Horizontal.Resolution', 'Memory.Technology', 'Processor' and 'Manufacturer' should be removed from 'lt'. 
+```
+  
+***
+### Question 6:
+Compare the following regressions via `anova( )`, and look at `vif( )` for each. Make an argument for keeping either `Manufacturer` or `Operating.System` in your final regression.
+```{r, eval = TRUE}
+  lm_full = lm(Price ~ . , data = lt)
+  lm_5 = lm(Price ~ .-Manufacturer, data = lt)
+  lm_6 = lm(Price ~ .-Operating.System, data = lt)
+
+  anova(lm_5, lm_full)
+  anova(lm_6, lm_full)
+  
+  vif(lm_5)
+  vif(lm_6)
+  
+```
+
+```
+According to the output above, there are reasons to keep either 'Manufacturer' or 'Operating.System' in the final regression.
+
+By reading the output of 'anova( )', the variable 'Manufacturer' should be kept. Because the p-value of 'anova(lm_5, lm_full)' is much larger. Moreover, there is 0.001 level significance supporting that the coefficient of 'Manufacturer' is not equal to zero.
+
+By reading the output of 'vif( )', the variable 'Operating.System' should be kept. While the vif of 'Manufacturer' is bigger than 10, the vif of 'Operating.System' is smaller than 10. Therefore, 'Manufacturer' should be deleted.
+```
+***
+
+## Narrowing down the model
+
+We have now established a final set of candidate variables from which to predict the price of laptops.  Install the **R** package called "leaps".  This package automatically performs several types of variable selection. 
+```{r, eval = TRUE}
+#install.packages("leaps")
+require("leaps")
+```
+***
+### Question 7
+a. Look at the documentation for the function `regsubsets( )`.  How many types of variable selection can be performed?  What are they?  Which measures of model fit does the function output?
+```
+The function 'regsubsets( )' can perform four types of variablr selection.
+
+They are exhaustive search, forward selection,  backward selection, and sequential replacement to search.
+
+The function outputs following measures of model fit:
+  rsq: The r-squared for each model.
+  rss: Residual sum of squares for each model.
+  adjr2: Adjusted r-squared.
+  cp: Mallows'Cp.
+  bic: Schwartz's information criterion, BIC.
+```
+
+b. Apply `regsubsets( )` to a regression predicting `Price` from all reasonable variables, using forward selection.  Plot the results by using `plot( )` on the output.  Use the option `scale = "adjr2"` inside `plot( )` to change the measure of model fit to be adjusted R-squared.
+```{r, eval = TRUE}
+reg_f = regsubsets(Price ~., data = lt, method = "forward")
+summary(reg_f)
+plot(reg_f, scale = "adjr2",main = "Adjusted R^2")
+summary(reg_f)$adjr2
+```
+
+c. Using  `regsubsets( )` to search exhaustively, and using Mallow's Cp as the measure of model fit, what is the best model for predicting `Price`?  
+```{r, eval = TRUE}
+reg_ff = regsubsets(Price ~. , data = lt, method = "exhaustive")
+require("car")
+reg_e = subsets(reg_ff, statistic="cp", legend = FALSE, main = "Mallow Cp")
+```
+```
+The model with smallest Cp is our best model.
+
+Based on the output above, the best model is 'lm(Price ~ factor(Max.Horizontal.Resolution) + Processor.Speed + factor(Processor) + factor(Manufacturer) + Operating.System, data = lt)'. 
+```
+***
+### Question 8
+Use your final model in 6c for the following:
+a. Make a plot of the predicted prices of each laptop in the dataset versus the true prices.  *Hint: use `predict( )`*  Is there anything we might be concerned about from these predictions?
+
+```{r, eval = TRUE}
+my_lm = lm(Price ~ factor(Max.Horizontal.Resolution) + Processor.Speed + factor(Processor) + factor(Manufacturer) + Operating.System, data = lt)
+summary(my_lm)
+plot(predict(my_lm),lt$Price)
+abline(0,1)
+```
+
+```
+According to the output above, there are several outliers. 
+```
+
+b. Look at some diagnostic plots and/or measurements for your final model, and comment on them.
+```{r, eval = TRUE}
+res <- resid(my_lm)
+plot(factor(lt$Max.Horizontal.Resolution), res)
+plot(lt$Processor.Speed, res)
+plot(factor(lt$Processor), res)
+plot(factor(lt$Manufacturer), res)
+plot(lt$Operating.System, res)
+plot(my_lm)
+```
+
+```
+According to the output above, most plots have residuals scatter randomly, according to the x variables.
+
+In "Residuals vs Fitted", points are scattering randomly.
+
+In "QQ-plot", the line is almost linear, showing that residuals are normally distributted.
+
+In scale location, points are scattering randomly.
+
+In "Residual vs Leverage", there are several outliers.
+```
+
+***
+
+## Your Turn
+
+Suppose you are consulting in marketing.  One of your clients, Cooper, says "Customers treat all PC manufacturers the same.  People only pay more for some brands because those laptops happen to include better features."  Another client, Tina, says "No, customers have a preference for specific manufacturers, and they will pay more for these brands even if the laptops are otherwise identical."
+
+Based on this dataset, who do you think is right, Cooper or Tina?  Do you believe price differences in PCs are only due to different features, or is there a manufacturer effect as well?  Be creative in your answer; go beyond your response to Question 5.  Make sure to support your argument with plots and clear explanations.
+
+*Note:  A "PC" in this case refers any laptop that is not made by Apple.*
+```{r, eval = TRUE}
+First = lm(Price ~ factor(Max.Horizontal.Resolution) + Processor.Speed + factor(Processor) + Operating.System, data = lt)
+summary(First)
+
+Second = lm(Price ~ factor(Manufacturer), data = lt)
+summary(Second)
+
+Third = lm(Price ~  (Max.Horizontal.Resolution + Processor.Speed + Processor + Operating.System) : Manufacturer, data = lt)
+summary(Third)
+```
+```
+To verify the statements by Cooper and Tina, I operate three linear regressions.
+
+According to the result of first regression, some features are very important, with statist
+ically significant coefficient that have positive contribution to the price. Therefore, Cooper's claim is valid.
+
+According to the result of second regression, some manufacturers have significant impact on the final price. Thus Tina's claim is also valid.
+
+However, according to the third regression, only a fraction of coefficients are significant. And the new regression has both higher R-squared and Adjusted R-squared, indicating that the final joint model better explains the complex relationship between Price and its covariates. These mean that the effect of manufactures and features have a few second order impact on the price. The exact influence of features on price depends on manufacturers, and influence of manufacturers can also depend on the features they have. 
+
+Thus claims made by Cooper and Tina are valid to some extend, but we might need to take into account of some confounding variables that might explain some deeper relationships between manufacturers, features, and the price.
+```
+
+
+

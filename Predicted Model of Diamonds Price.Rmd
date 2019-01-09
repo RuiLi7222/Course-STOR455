@@ -1,0 +1,182 @@
+# Project of STOR 455
+
+**Created by Rui Li, UNC Chapel Hill**
+
+***Predicted Price Model of Diamonds***
+<br><br>
+*1. Collecting and Summarizing Data.*
+```{r, eval=TRUE}
+diamond <- read.delim("~/FILES/UNC Course/STOR Major/STOR 455/Work in Stor 455/Project/us.carata.txt")
+summary(diamond)
+```
+<br><br>
+*2. Preliminaries of Regression.*
+```{r, eval=TRUE}
+hist(diamond$price)
+hist(diamond$carat)
+plot(diamond$carat, diamond$price, main = "Scatterplot of Price vs Carat", xlab = "Carat", ylab = "Price")
+plot(diamond$color, diamond$price)
+plot(diamond$clarity, diamond$price)
+plot(diamond$certification, diamond$price)
+```
+```
+Based on the output of "Scatterplot of Price vs Carat", there is a clear positive relationship between Price and Carat. However, the trend appears to fan out, which indicates higher Carat will have higher Price. 
+
+Generally, a one carat diamond will cost more than two half-carat diamonds, assuming all other qualities are equal. (THE 4Cs, 2018)
+
+Therefore, we need to transform the variable "Pice", making it suitable for linear regression. Here, I take the logarithm of prices instead of price. The demonstrations are as followed.
+```
+<br><br>
+*3. The Demonstrations of the Transformation of Variable "Price".*
+```{r, eval=TRUE}
+ln_price = log10(diamond$price)
+hist(ln_price)
+plot(diamond$carat, ln_price, main = "Scatterplot of ln(Price) vs Carat", xlab = "Carat", ylab = "ln_price")
+plot(diamond$color, ln_price)
+plot(diamond$clarity, ln_price)
+plot(diamond$certification, ln_price)
+```
+```
+Based on the output of "Scatterplot of ln(Price) vs Carat", the relationship between Carat and the logarithms of Price appears more linear, compared to the former scatter plot. Therefore, it would be more judicious to employ ln(Price) in developing a linear regression model.
+```
+<br><br>
+*4. Code the Original Data.*
+```{r, eval=TRUE}
+diamond$color <- relevel(diamond$color, ref = "I")
+diamond$clarity <- relevel(diamond$clarity, ref = "VS2")
+diamond$certification <- relevel(diamond$certification, ref = "HRD")
+lm_diamond <- lm(ln_price ~ diamond$carat + diamond$color + diamond$clarity + diamond$certification)
+summary(lm_diamond)
+```
+```
+Before doing the Multi linear regression, I define color "I" as the baseline, and compared it to the other five colors using five indicator variables; I select clarity "VS2" as the baseline, and compared it to the other four clarity grades.(Chu Singfat, 2001) 
+
+Here, I get the first possible predicted model of diamonds price.
+
+ln_price = 2.39 + 1.25Carat + 0.21D + 0.17E + 0.15F + 0.09G + 0.05H + 0.13IF + 0.05VS1 + 0.12VVS1 + 0.09VVS2 + 0.003GIA - 0.08IGI.
+```
+<br><br>
+*5. Diagnostic of First Predicted Model (Residual Analysis)*
+```{r, eval=TRUE}
+res <- resid(lm_diamond)
+plot(res, diamond$carat)
+plot(res, diamond$color)
+plot(res, diamond$clarity)
+plot(res, diamond$certification)
+plot(lm_diamond)
+```
+```
+Here, I am doing the residual analysis of the first predicted model. From "Residuals Versus the Fitted Value", the points do not scatter randomly; also, the Q-Q plot does not form as a linear line. These show that the residuals are not normally distributed, and the predicted model is not appropriate enough. 
+
+The residual plot indicates that the regression model underestimates prices at both ends of the price range and overestimates the midrange prices. (Chu Singfat, 2001)
+```
+<br><br>
+*6. Revise the Model*
+<br>
+6.1 Employ the square of carat
+```{r, eval=TRUE}
+diamond$caratsq <- diamond$carat^2
+lm_diamond <- lm(ln_price ~ diamond$carat + diamond$caratsq + diamond$color + diamond$clarity + diamond$certification)
+summary(lm_diamond)
+require("car")
+vif(lm_diamond)
+
+res <- resid(lm_diamond)
+plot(res, diamond$carat)
+plot(res, diamond$color)
+plot(res, diamond$clarity)
+plot(res, diamond$certification)
+plot(lm_diamond)
+```
+```
+Based on the statistical analysis and residuals analysis output above, we can notice that there is a strong and positive relationship between each variable and ln_price (exclude the certifications). And the residuals plots look much better.
+
+However, as I have added a transformed variable caratsq which is highly correlated with the untransformed variable carat, the VIF value of carat and caratsq is larger than 10 (the VIF carat = 42, the VIF caratsq = 37).
+```
+<br>
+6.2 Centering the predictor
+```{r, eval=TRUE}
+diamond$caratc <- diamond$carat - mean(diamond$carat)
+diamond$caratcsq <- diamond$caratc^2
+lm_diamond <- lm(ln_price ~ diamond$caratc + diamond$caratcsq + diamond$color + diamond$clarity + diamond$certification)
+summary(lm_diamond)
+require("car")
+vif(lm_diamond)
+
+res <- resid(lm_diamond)
+plot(res, diamond$carat)
+plot(res, diamond$color)
+plot(res, diamond$clarity)
+plot(res, diamond$certification)
+plot(lm_diamond)
+```
+```
+For the quadratic mode, replacing carat with carat - mean(carat) will remove the dependence while preserving the model. 
+
+Based on the statistical analysis and residuals analysis output above, we can notice that there is a strong and positive relationship between each variable and ln_price (exclude the certifications). And the residuals plots are nearly normally distributed.
+
+Most importantly, the VIF values have decreased to 2 and 1, which are smaller than 4.
+
+Here, we can get the second predicted model:
+ln_price = 3.24 + 1.34Caratc - 0.92Caratcsq + 0.20D + 0.16E + 0.13F + 0.09G + 0.04H + 0.14IF + 0.03VS1 + 0.10VVS1 + 0.07VVS2 + 0.0004GIA - 0.01IGI
+```
+<br>
+6.3 Consider about the intersections
+```{r,eval=TRUE}
+lm_diamond <- lm(ln_price ~ diamond$caratc + diamond$caratcsq + diamond$color + diamond$clarity + diamond$certification + diamond$caratc : diamond$color + diamond$caratcsq : diamond$color + diamond$color : diamond$clarity)
+summary(lm_diamond)
+```
+```
+Here, I employ several possible intersections into the second predicted model.
+
+I use the forward subset selection method to select a model ("Adjusted R^2" as criterion). This is an automatic model search strategy used to select the predictors in a regression model.
+```
+```{r, eval=TRUE}
+require("leaps")
+reg_f = regsubsets(ln_price ~ diamond$caratc + diamond$caratcsq + diamond$color + diamond$clarity + diamond$certification + diamond$caratc : diamond$color + diamond$caratcsq : diamond$color + diamond$color : diamond$clarity, data = diamond, method = "forward")
+summary(reg_f)
+plot(reg_f, scale = "adjr2",main = "Adjusted R^2")
+summary(reg_f)$adjr2
+```
+```
+Based on the output of "Adjusted R^2", we need to select the model with highest adjusted R^2 value 0.99. We can see that the intersections are not include in the selected model, so I will not add any intersections into the final model. 
+```
+<br><br>
+*7. Confirm the Final Model*
+<br>
+7.1 Select the final Model
+```
+Agian, I use the forward subset selection method to select a model ("Adjusted R^2" as criterion), along with the "Mallow cp" method. They are both automatic model search strategies used to select the predictors in a regression model. This time the regression analysis is based on the second predicted model.
+```
+```{r, eval= TRUE}
+require("leaps")
+reg_f1 = regsubsets(ln_price ~ diamond$caratc + diamond$caratcsq + diamond$color + diamond$clarity + diamond$certification, data = diamond, method = "forward")
+summary(reg_f1)
+plot(reg_f1, scale = "adjr2",main = "Adjusted R^2")
+summary(reg_f1)$adjr2
+reg_ff = regsubsets(ln_price ~ diamond$caratc + diamond$caratcsq + diamond$color + diamond$clarity + diamond$certification, data = diamond, method = "exhaustive")
+require("car")
+reg_e = subsets(reg_ff, statistic="cp", legend = FALSE, main = "Mallow Cp")
+```
+```
+Based on the output of two methods, we can get the final predicted model, which includes the variable caratc, caratcsq, D, E, F, G, IF, VVS1.
+
+ln_price = 3.24 + 1.35Caratc - 0.94Caratcsq + 0.20D + 0.16E + 0.13F + 0.09G + 0.14IF + 0.10VVS1.
+
+```
+<br>
+7.2 Residual analysis of final model
+```{r, eval=TRUE}
+lm_diamond <- lm(ln_price ~ diamond$caratc + diamond$caratcsq + diamond$color + diamond$clarity)
+summary(lm_diamond)
+require("car")
+vif(lm_diamond)
+res <- resid(lm_diamond)
+plot(res, diamond$carat)
+plot(res, diamond$color)
+plot(res, diamond$clarity)
+plot(lm_diamond)
+```
+```
+Based on the output above, there is a strong relationship between chosen variables and ln(Price). The VIF values are all less than 4, and residuals are normally distributed.
+```

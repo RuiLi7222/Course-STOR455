@@ -1,0 +1,161 @@
+# Matrices in R
+**Created by John Palowitch, UNC Chapel Hill**
+
+**Edited by Jan Hannig, UNC Chapel Hill**
+
+
+### Conceptual Questions 
+Please read the document ***Matrices in R.docx*** before completing this assignment. This assignment has two goals:
+
+-Learning new commands in R from a written source.
+
+-Using R for Matrix Calculations
+<br><br>
+1. Suppose:
+\[
+\mathbf{A} = \begin{bmatrix}2&3&4&5\\-1&0&3&2\end{bmatrix},\;\;\;\;\mathbf{B} = \begin{bmatrix}4&-1&10&0\\-2&-2&5&6\end{bmatrix}
+\]
+\[
+\mathbf{a} = \begin{bmatrix}6&2&-11&1\end{bmatrix},\;\;\;\;\mathbf{b} = \begin{bmatrix}4\\2\\3\\0\end{bmatrix},\;\;\;\;\mathbf{c} = \begin{bmatrix}-3\\-10\end{bmatrix}
+\]
+a. Write down the dimensions of the following (you can use a comment box that you create). If the operation is not possible, write "N.P."
+
+i.$\mathbf{A}^T\mathbf{B}$   
+```
+4X4
+```
+ii.$\mathbf{B}\mathbf{A}^T$  
+```
+2X2 
+```
+iii.$\mathbf{A}\mathbf{B}$   
+```
+N.P. The ncol(A) = 4 is not equal to the nrow(B) = 2.
+```
+iv.$\mathbf{A}^T\mathbf{A}$  
+```
+4X4
+```
+v.$\mathbf{b}^T\mathbf{A}$   
+```
+N.P. The ncol(t(b)) = 4 is not equal to the nrow(A) = 2.
+```
+vi.$\mathbf{a}\mathbf{A}^T$  
+```
+1X2
+```
+vii.$\mathbf{B}\mathbf{b}$   
+```
+2X1
+```
+viii.$\mathbf{B}\mathbf{c}^T$ 
+```
+N.P. The ncol(B) = 4 is not equal to the nrow(t(c)) = 1.
+```
+ix.$\mathbf{a}\mathbf{c}$    
+```
+N.P. The ncol(a) = 4 is not equal to the nrow(c) = 2.
+```
+x.$\mathbf{b}\mathbf{a}$     
+```
+4X4
+```
+
+b. Again, write down the dimensions of the following (on this sheet, next to the expression). If the operation is not possible, write "N.P."
+
+i.$(\mathbf{A}^T\mathbf{B})^{-1}\mathbf{a}$
+```
+N.P. Matrix t(A) %*% B is not invertible.
+```
+ii.$\mathbf{c}(\mathbf{B}\mathbf{A}^T)^{-1}$
+```
+N.P. The ncol(c) = 1 is not equal to nrow(solve(B %*% t(A))) = 2.
+```
+iii.$(\mathbf{B}^T\mathbf{B})^{-1}\mathbf{B}^T\mathbf{c}$
+```
+N.P. Matrix t(B) %*% B is singular.
+```
+iv.$\mathbf{b}^T\mathbf{A}^T\mathbf{c}$
+```
+1X1
+```
+v.$(\mathbf{B}\mathbf{B}^T)^{-1}\mathbf{B}\mathbf{b}$
+```
+2X1
+```     
+        
+### Applied Questions 
+2. In a code block below, create and print the following matrices and vectors:
+\[
+\mathbf{A} = \begin{bmatrix}-6&0&1\\1&10&7.5\end{bmatrix},\;\;\;\;\mathbf{B} = \begin{bmatrix}-15&1&1\\5.25&1&2.5\end{bmatrix}
+\]
+\[
+\mathbf{a} = \begin{bmatrix}6&2&1\end{bmatrix},\;\;\;\;\mathbf{b} = \begin{bmatrix}2\\-7\end{bmatrix}
+\]
+```{r, eval = TRUE}
+A <- matrix(c(-6,0,1, 1,10,7.5), nrow = 2, ncol = 3, byrow = TRUE)
+print(A)
+B <- matrix(c(-15,1,1, 5.25,1,2.5), nrow = 2, ncol = 3, byrow = TRUE)
+print(B)
+a <- matrix(c(6,2,1), nrow = 1, ncol = 3, byrow = TRUE)
+print(a)
+b <- matrix(c(2,-7), nrow = 2, ncol = 1, byrow = FALSE)
+print(b)
+```
+
+3. Compute (with **R**, in a new code block below) and print the following products:
+  a. $\mathbf{A}^T\mathbf{B}$
+```{r, eval = TRUE}
+A <- matrix(c(-6,0,1, 1,10,7.5), nrow = 2, ncol = 3, byrow = TRUE)
+B <- matrix(c(-15,1,1, 5.25,1,2.5), nrow = 2, ncol = 3, byrow = TRUE)
+print(t(A)%*%B)
+```
+  b. $\mathbf{B}\mathbf{a}^T$
+```{r, eval = TRUE}
+B <- matrix(c(-15,1,1, 5.25,1,2.5), nrow = 2, ncol = 3, byrow = TRUE)
+a <- matrix(c(6,2,1), nrow = 1, ncol = 3, byrow = TRUE)
+print(B%*%t(a))
+```
+  c. $\mathbf{b}^T\mathbf{A}$
+```{r, eval = TRUE}
+b <- matrix(c(2,-7), nrow = 2, ncol = 1, byrow = FALSE)
+A <- matrix(c(-6,0,1, 1,10,7.5), nrow = 2, ncol = 3, byrow = TRUE)
+print(t(b)%*%A)
+```
+  d. $\mathbf{A}^T\mathbf{b}$
+```{r, eval = TRUE}
+A <- matrix(c(-6,0,1, 1,10,7.5), nrow = 2, ncol = 3, byrow = TRUE)
+b <- matrix(c(2,-7), nrow = 2, ncol = 1, byrow = FALSE)
+print(t(A)%*%b)
+```
+  e. $\mathbf{a}^T\mathbf{a}$
+```{r, eval = TRUE}
+a <- matrix(c(6,2,1), nrow = 1, ncol = 3, byrow = TRUE)
+print(t(a)%*%a)
+```
+  f. $\mathbf{a}\mathbf{a}^T$
+```{r, eval = TRUE}
+a <- matrix(c(6,2,1), nrow = 1, ncol = 3, byrow = TRUE)
+print(a%*%t(a))
+```
+  g. $(\mathbf{A}^T\mathbf{A})^{-1}$
+```
+Matrix t(A)%*%A is computationally singular, so solve(t(A)%*%A) does not exist.
+```
+  h. $(\mathbf{A}^T\mathbf{A})^{-1}\mathbf{A}^T\mathbf{b}$
+```
+Matrix t(A)%*%A is computationally singular, so solve(t(A)%*%A)%*%t(A)%*%b does not exist.
+```
+  i. $\mathbf{b}^T\mathbf{A}\mathbf{a}^T$
+```{r, eval = TRUE}
+b <- matrix(c(2,-7), nrow = 2, ncol = 1, byrow = FALSE)
+A <- matrix(c(-6,0,1, 1,10,7.5), nrow = 2, ncol = 3, byrow = TRUE)
+a <- matrix(c(6,2,1), nrow = 1, ncol = 3, byrow = TRUE)
+print(t(b)%*%A%*%t(a))
+```
+  j. $\mathbf{a}\mathbf{B}\mathbf{A}^T\mathbf{b}$
+```
+The ncol(a) = 3 is not equal to the nrow(B) = 2, so a%*%B%*%t(A)%*%b is not valid.
+```
+
+
